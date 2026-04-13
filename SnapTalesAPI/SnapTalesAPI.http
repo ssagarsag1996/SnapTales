@@ -1,0 +1,6 @@
+@SnapTalesAPI_HostAddress = http://localhost:5209
+
+GET {{SnapTalesAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
