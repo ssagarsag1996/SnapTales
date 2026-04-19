@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../PaymentGateway/PaymentGateway.csproj" />
   <Project Path="SnapTalesAPI.csproj" />
 </Solution>
