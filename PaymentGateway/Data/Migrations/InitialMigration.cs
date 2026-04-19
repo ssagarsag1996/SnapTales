@@ -2,7 +2,7 @@
 
 namespace PaymentGateway.Data.Migrations
 {
-    [Migration(202604191632)]
+    [Migration(202604191631)]
     public class InitialMigration : Migration
     {
         public override void Up()

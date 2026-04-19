@@ -1,4 +1,6 @@
 ﻿using FluentMigrator.Runner;
+using FluentMigrator.Runner.Versioning;
+using FluentMigrator.Runner.VersionTableInfo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PaymentGateway.Data.Context;
@@ -12,19 +14,6 @@ public static class ServiceCollectionExtensions
         string connectionString)
     {
         services.AddDbContext<PaymentGatewayDbContext>(options => options.UseNpgsql(connectionString));
-
-        return services;
-    }
-    public static IServiceCollection AddPaymentGatewayMigrations(
-        this IServiceCollection services, string connectionString)
-    {
-        services
-            .AddFluentMigratorCore()
-            .ConfigureRunner(rb => rb
-                .AddPostgres()
-                .WithGlobalConnectionString(connectionString)
-                .ScanIn(typeof(InitialMigration).Assembly).For.Migrations())
-                .AddLogging(lb => lb.AddFluentMigratorConsole());
 
         return services;
     }

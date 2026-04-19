@@ -16,9 +16,7 @@ builder.Services.AddSnapTalesAPIContext(connectionString);
 
 builder.Services.AddPaymentGatewayContext(connectionString);
 
-builder.Services.AddSnapTalesAPIMigrations(connectionString);
-
-builder.Services.AddPaymentGatewayMigrations(connectionString);
+builder.Services.AddMigrations(connectionString);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

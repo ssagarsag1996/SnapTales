@@ -14,17 +14,20 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    public static IServiceCollection AddSnapTalesAPIMigrations(
-        this IServiceCollection services, 
-        string connectionString)
+
+    public static IServiceCollection AddMigrations(
+    this IServiceCollection services,
+    string connectionString)
     {
         services
             .AddFluentMigratorCore()
             .ConfigureRunner(rb => rb
                 .AddPostgres()
                 .WithGlobalConnectionString(connectionString)
-                .ScanIn(typeof(InitialMigration).Assembly).For.Migrations())
-                .AddLogging(lb => lb.AddFluentMigratorConsole());
+                .ScanIn(typeof(InitialMigration).Assembly).For.Migrations()
+                .ScanIn(typeof(PaymentGateway.Data.Migrations.InitialMigration).Assembly).For.Migrations()
+            )
+            .AddLogging(lb => lb.AddFluentMigratorConsole());
 
         return services;
     }
