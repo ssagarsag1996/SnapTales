@@ -1,16 +1,18 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SnapTalesAPI.Models;
 
-namespace PaymentGateway.Data.Context
+namespace SnapTalesAPI.Data.Context
 {
     public class MainDbContext : DbContext
     {
-       public DbSet<WeatherForecast> WeatherForecast { get; set; }
-
+        public MainDbContext(DbContextOptions<MainDbContext> options)
+            : base(options)
+        {
+        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema("public");
             base.OnModelCreating(modelBuilder);
         }
+
     }
 }

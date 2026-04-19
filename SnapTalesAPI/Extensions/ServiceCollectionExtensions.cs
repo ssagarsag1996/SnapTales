@@ -1,22 +1,22 @@
 ﻿using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using PaymentGateway.Data.Context;
-using PaymentGateway.Data.Migrations;
+using SnapTalesAPI.Data.Context;
+using SnapTalesAPI.Data.Migrations;
 
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddPaymentGatewayContext(
+    public static IServiceCollection AddSnapTalesAPIContext(
         this IServiceCollection services,
         string connectionString)
     {
-        services.AddDbContext<PaymentGatewayDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<MainDbContext>(options => options.UseNpgsql(connectionString));
 
         return services;
     }
-    public static IServiceCollection AddPaymentGatewayMigrations(
-        this IServiceCollection services, string connectionString)
+    public static IServiceCollection AddSnapTalesAPIMigrations(
+        this IServiceCollection services, 
+        string connectionString)
     {
         services
             .AddFluentMigratorCore()

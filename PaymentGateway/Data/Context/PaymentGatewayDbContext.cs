@@ -4,12 +4,15 @@ namespace PaymentGateway.Data.Context
 {
     public class PaymentGatewayDbContext : DbContext
     {
-        //public DbSet<Payment> Payments { get; set; }
-
+        public PaymentGatewayDbContext(DbContextOptions<PaymentGatewayDbContext> options)
+            : base(options)
+        {
+        }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.HasDefaultSchema("paymentgateway");
             base.OnModelCreating(modelBuilder);
         }
+        // DbSets
     }
 }

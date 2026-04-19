@@ -1,5 +1,5 @@
+using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
-using PaymentGateway.Data.Context;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,12 +12,13 @@ if (string.IsNullOrEmpty(connectionString))
     throw new Exception("Connection string not found!");
 }
 
+builder.Services.AddSnapTalesAPIContext(connectionString);
 
-builder.Services.AddDbContext<MainDbContext>(options =>
-    options.UseNpgsql(connectionString, x =>
-        x.MigrationsHistoryTable("__EFMigrationsHistory", "public")));
+builder.Services.AddPaymentGatewayContext(connectionString);
 
-builder.Services.AddPaymentGateway(connectionString);
+builder.Services.AddSnapTalesAPIMigrations(connectionString);
+
+builder.Services.AddPaymentGatewayMigrations(connectionString);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -36,5 +37,11 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+    runner.MigrateUp();
+}
 
 app.Run();
