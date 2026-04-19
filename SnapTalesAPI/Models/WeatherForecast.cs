@@ -1,4 +1,4 @@
-namespace SnapTalesAPI
+namespace SnapTalesAPI.Models
 {
     public class WeatherForecast
     {

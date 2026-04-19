@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SnapTalesAPI.Models;
 
 namespace SnapTalesAPI.Controllers
 {
