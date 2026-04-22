@@ -1,4 +1,4 @@
-﻿using PaymentGateway.Models;
+using PaymentGateway.Models;
 using System.Net.Http.Json;
 
 namespace PaymentGateway.Services.Razorpay.V1
@@ -6,30 +6,30 @@ namespace PaymentGateway.Services.Razorpay.V1
     public class RazorpayClientV1
     {
         private readonly HttpClient _httpClient;
-        private readonly RazorpayOptions _options;
 
-        public RazorpayClientV1(HttpClient httpClient, RazorpayOptions options)
+        public RazorpayClientV1(HttpClient httpClient)
         {
             _httpClient = httpClient;
-            _options = options;
         }
 
         public async Task<string> CreateOrderAsync(PaymentRequest request)
         {
             var payload = new
             {
-                amount = request.Amount * 100,
+                amount = (long)(request.Amount * 100), // Razorpay expects paise
                 currency = request.Currency,
                 receipt = request.OrderId
             };
 
-            var response = await _httpClient.PostAsJsonAsync("/orders", payload);
+            var response = await _httpClient.PostAsJsonAsync("orders", payload);
+            response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
         }
 
-        public async Task<string> GetPaymentStatusAsync(string transactionId)
+        public async Task<string> GetPaymentStatusAsync(string paymentId)
         {
-            var response = await _httpClient.GetAsync($"/payments/{transactionId}");
+            var response = await _httpClient.GetAsync($"payments/{paymentId}");
+            response.EnsureSuccessStatusCode();
             return await response.Content.ReadAsStringAsync();
         }
     }

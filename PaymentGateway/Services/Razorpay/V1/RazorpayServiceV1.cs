@@ -1,4 +1,4 @@
-﻿using PaymentGateway.Exception;
+using PaymentGateway.Exception;
 using PaymentGateway.Interface;
 using PaymentGateway.Models;
 using PaymentGateway.Services.Razorpay.V1;
@@ -23,20 +23,21 @@ namespace PaymentGateway.Providers.Razorpay.V1
             }
             catch (System.Exception ex)
             {
-                throw new PaymentGatewayException("Razorpay V1 failed", ex);
+                throw new PaymentGatewayException("Razorpay V1 CreatePayment failed", ex);
             }
         }
 
         public async Task<PaymentStatusResponse> GetPaymentStatusAsync(string transactionId)
         {
-            var raw = await _client.GetPaymentStatusAsync(transactionId);
-
-            return new PaymentStatusResponse
+            try
             {
-                TransactionId = transactionId,
-                Status = "SUCCESS",
-                IsFinal = true
-            };
+                var raw = await _client.GetPaymentStatusAsync(transactionId);
+                return RazorpayMapperV1.MapToStatusResponse(raw, transactionId);
+            }
+            catch (System.Exception ex)
+            {
+                throw new PaymentGatewayException("Razorpay V1 GetPaymentStatus failed", ex);
+            }
         }
     }
 }

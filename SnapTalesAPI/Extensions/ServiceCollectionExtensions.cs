@@ -1,5 +1,6 @@
 ﻿using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
+using PaymentGateway.DependencyInjection;
 using SnapTalesAPI.Data.Context;
 using SnapTalesAPI.Data.Migrations;
 
