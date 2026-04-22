@@ -25,7 +25,7 @@ public static class ServiceCollectionExtensions
                 .AddPostgres()
                 .WithGlobalConnectionString(connectionString)
                 .ScanIn(typeof(InitialMigration).Assembly).For.Migrations()
-                .ScanIn(typeof(PaymentGateway.Data.Migrations.InitialMigration).Assembly).For.Migrations()
+                .AddPaymentGatewayMigrations()
             )
             .AddLogging(lb => lb.AddFluentMigratorConsole());
 

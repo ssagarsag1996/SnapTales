@@ -18,6 +18,8 @@ builder.Services.AddPaymentGatewayContext(connectionString);
 
 builder.Services.AddMigrations(connectionString);
 
+builder.Services.AddPaymentGatewayProviderServices();
+
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();

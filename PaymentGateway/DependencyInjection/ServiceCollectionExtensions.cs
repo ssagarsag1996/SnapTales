@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using FluentMigrator.Runner;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PaymentGateway.Data.Context;
+using PaymentGateway.Data.Migrations;
 using PaymentGateway.Factories;
 using PaymentGateway.Interface;
 using PaymentGateway.Providers.Razorpay.V1;
 using PaymentGateway.Services.Razorpay.V1;
-
 
 public static class ServiceCollectionExtensions
 {
@@ -17,7 +18,12 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-    public static IServiceCollection AddPaymentGateways(this IServiceCollection services)
+    public static IMigrationRunnerBuilder AddPaymentGatewayMigrations(
+       this IMigrationRunnerBuilder rb)
+    {
+        return rb.ScanIn(typeof(InitialMigration).Assembly).For.Migrations();
+    }
+    public static IServiceCollection AddPaymentGatewayProviderServices(this IServiceCollection services)
     {
         // Register services
         services.AddHttpClient<RazorpayClientV1>();
