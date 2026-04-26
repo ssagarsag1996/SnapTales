@@ -1,36 +1,36 @@
-﻿using FluentMigrator.Runner;
+using FluentMigrator.Runner;
 using Microsoft.EntityFrameworkCore;
 using PaymentGateway.DependencyInjection;
 using SnapTalesAPI.Data.Context;
 using SnapTalesAPI.Data.Migrations;
 
-
-public static class ServiceCollectionExtensions
+namespace SnapTalesAPI.Extensions
 {
-    public static IServiceCollection AddSnapTalesAPIContext(
-        this IServiceCollection services,
-        string connectionString)
+    public static class ServiceCollectionExtensions
     {
-        services.AddDbContext<MainDbContext>(options => options.UseNpgsql(connectionString));
+        public static IServiceCollection AddSnapTalesAPIContext(
+            this IServiceCollection services,
+            string connectionString)
+        {
+            services.AddDbContext<MainDbContext>(options => options.UseNpgsql(connectionString));
+            return services;
+        }
 
-        return services;
-    }
+        public static IServiceCollection AddMigrations(
+            this IServiceCollection services,
+            string connectionString)
+        {
+            services
+                .AddFluentMigratorCore()
+                .ConfigureRunner(rb => rb
+                    .AddPostgres()
+                    .WithGlobalConnectionString(connectionString)
+                    .ScanIn(typeof(InitialMigration).Assembly).For.Migrations()
+                    .AddPaymentGatewayMigrations()
+                )
+                .AddLogging(lb => lb.AddFluentMigratorConsole());
 
-    public static IServiceCollection AddMigrations(
-    this IServiceCollection services,
-    string connectionString)
-    {
-        services
-            .AddFluentMigratorCore()
-            .ConfigureRunner(rb => rb
-                .AddPostgres()
-                .WithGlobalConnectionString(connectionString)
-                .ScanIn(typeof(InitialMigration).Assembly).For.Migrations()
-                .AddPaymentGatewayMigrations()
-            )
-            .AddLogging(lb => lb.AddFluentMigratorConsole());
-
-        return services;
+            return services;
+        }
     }
 }
-

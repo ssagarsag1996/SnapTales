@@ -10,7 +10,7 @@ export interface CartItem {
 
 export const useAppStore = defineStore('app', () => {
   // State
-  const API_BASE = 'http://localhost:5000/api'
+  const API_BASE = 'http://localhost:5184/api'
   const currentPage = ref('shop')
   const filter = ref('all')
   const cart = ref<CartItem[]>([])

@@ -1,50 +1,61 @@
 using FluentMigrator.Runner;
-using Microsoft.EntityFrameworkCore;
 using PaymentGateway.DependencyInjection;
 using Scalar.AspNetCore;
+using SnapTalesAPI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-if (string.IsNullOrEmpty(connectionString))
+// ── CORS — allow Vue UI ───────────────────────────────────────────────────────
+builder.Services.AddCors(options =>
 {
-    throw new Exception("Connection string not found!");
-}
+    options.AddPolicy("SnapTalesUI", policy =>
+        policy
+            .WithOrigins("http://localhost:8100")
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+});
 
+// ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddSnapTalesAPIContext(connectionString);
-
 builder.Services.AddPaymentGatewayContext(connectionString);
 
+// ── Migrations ────────────────────────────────────────────────────────────────
 builder.Services.AddMigrations(connectionString);
 
+// ── Payment Gateway ───────────────────────────────────────────────────────────
 builder.Services.AddPaymentGatewayProviderServices();
+builder.Services.AddRazorpay(options =>
+{
+    options.Key           = builder.Configuration["Razorpay:Key"]           ?? string.Empty;
+    options.Secret        = builder.Configuration["Razorpay:Secret"]        ?? string.Empty;
+    options.WebhookSecret = builder.Configuration["Razorpay:WebhookSecret"] ?? string.Empty;
+});
 
+// ── API ───────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ── Run migrations on startup ─────────────────────────────────────────────────
+using (var scope = app.Services.CreateScope())
+{
+    var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
+    runner.MigrateUp();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
     app.MapScalarApiReference();
 }
 
+app.UseCors("SnapTalesUI");
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
-using (var scope = app.Services.CreateScope())
-{
-    var runner = scope.ServiceProvider.GetRequiredService<IMigrationRunner>();
-    runner.MigrateUp();
-}
 
 app.Run();
