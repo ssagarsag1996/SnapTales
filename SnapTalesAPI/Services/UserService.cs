@@ -71,6 +71,49 @@ namespace SnapTalesAPI.Services
             return new AuthResponse(MapToResponse(user), _jwt.GenerateToken(user));
         }
 
+        public async Task<AuthResponse> FindOrCreateByGoogleAsync(
+            string googleSub, string? email, string? name, string? avatarUrl)
+        {
+            User? user = null;
+
+            // 1. Prefer stable Google subject identifier
+            user = await _db.Users.FirstOrDefaultAsync(u => u.GoogleSub == googleSub);
+
+            // 2. Fall back to email — handles existing accounts that previously signed in
+            //    via Firebase with the same Google email address
+            if (user == null && !string.IsNullOrWhiteSpace(email))
+                user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user != null)
+            {
+                bool changed = false;
+                if (user.GoogleSub == null)
+                    { user.GoogleSub = googleSub; changed = true; }
+                if (user.Name == null && !string.IsNullOrWhiteSpace(name))
+                    { user.Name = name; changed = true; }
+                if (user.AvatarUrl == null && !string.IsNullOrWhiteSpace(avatarUrl))
+                    { user.AvatarUrl = avatarUrl; changed = true; }
+                if (changed) { user.UpdatedAt = DateTime.UtcNow; await _db.SaveChangesAsync(); }
+            }
+            else
+            {
+                user = new User
+                {
+                    Id        = Guid.NewGuid(),
+                    GoogleSub = googleSub,
+                    Email     = string.IsNullOrWhiteSpace(email)     ? null : email,
+                    Name      = string.IsNullOrWhiteSpace(name)      ? null : name,
+                    AvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                };
+                _db.Users.Add(user);
+                await _db.SaveChangesAsync();
+            }
+
+            return new AuthResponse(MapToResponse(user), _jwt.GenerateToken(user));
+        }
+
         public async Task<UserResponse?> GetByIdAsync(Guid id)
         {
             var user = await _db.Users.FindAsync(id);

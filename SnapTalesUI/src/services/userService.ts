@@ -63,13 +63,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
 }
 
 export const userService = {
-  async findOrCreate(
-    payload: { name?: string; email?: string; phone?: string; firebaseUid?: string }
-  ): Promise<AuthResult> {
-    const res = await fetch(`${API_BASE}/users/find-or-create`, {
+  /** Exchange a Google ID Token for a SnapTales JWT. */
+  async signInWithGoogle(idToken: string): Promise<AuthResult> {
+    const res = await fetch(`${API_BASE}/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ idToken }),
     })
     const auth = await handleResponse<{ user: User; token: string }>(res)
     // Normalise casing from C# PascalCase response

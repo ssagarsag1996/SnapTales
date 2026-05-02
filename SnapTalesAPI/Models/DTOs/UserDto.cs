@@ -1,5 +1,8 @@
 namespace SnapTalesAPI.Models.DTOs
 {
+    /// <summary>Request body for POST /api/auth/google</summary>
+    public record GoogleAuthRequest(string IdToken);
+
     public record FindOrCreateRequest(
         string? Name,
         string? Email,

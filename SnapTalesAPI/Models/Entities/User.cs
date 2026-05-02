@@ -13,6 +13,7 @@ namespace SnapTalesAPI.Models.Entities
         public string? AvatarUrl { get; set; }
         public List<Address> Addresses { get; set; } = new();
         public string? FirebaseUid { get; set; }
+        public string? GoogleSub { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

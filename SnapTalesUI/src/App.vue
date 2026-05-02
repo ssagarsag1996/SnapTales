@@ -188,8 +188,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
-import { authService } from '@/services/authService'
-import { userService, onUnauthorized } from '@/services/userService'
+import { onUnauthorized } from '@/services/userService'
+import { initGoogle } from '@/services/googleAuthService'
 
 // Import page components
 import ShopPage from '@/pages/ShopPage.vue'
@@ -214,26 +214,12 @@ const handleScroll = () => {
   isScrolled.value = window.scrollY > 10
 }
 
-onMounted(async () => {
+onMounted(() => {
   window.addEventListener('scroll', handleScroll)
   onUnauthorized(() => store.handleUnauthorized())
   store.loadCatalogue()
-  // Handle Google redirect sign-in result (fires after signInWithRedirect returns)
-  try {
-    const creds = await authService.getGoogleRedirectResult()
-    if (creds && (creds.uid || creds.email || creds.phone)) {
-      const clean: { name?: string; email?: string; phone?: string; firebaseUid?: string } = {}
-      if (creds.uid)   clean.firebaseUid = creds.uid
-      if (creds.name)  clean.name        = creds.name
-      if (creds.email) clean.email       = creds.email
-      if (creds.phone) clean.phone       = creds.phone
-      const { user, token } = await userService.findOrCreate(clean)
-      store.setUser(user, token)
-      store.showToast(`Welcome${user.name ? ', ' + user.name : ''}!`)
-    }
-  } catch {
-    // No redirect result or error — silently ignore
-  }
+  // Initialise Google Identity Services so it's ready before the sign-in modal opens
+  initGoogle()
 })
 
 onUnmounted(() => {
