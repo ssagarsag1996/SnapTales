@@ -17,7 +17,6 @@ export interface User {
   phone: string | null
   role: number
   avatarUrl: string | null
-  firebaseUid: string | null
   addresses: Address[]
   createdAt: string
   updatedAt: string
@@ -83,7 +82,7 @@ export const userService = {
     return handleResponse<User>(res)
   },
 
-  async update(id: string, payload: { name?: string; avatarUrl?: string }): Promise<User> {
+  async update(id: string, payload: { name?: string; avatarUrl?: string; phone?: string }): Promise<User> {
     const res = await fetch(`${API_BASE}/users/${id}`, {
       method: 'PUT',
       headers: authHeaders(),

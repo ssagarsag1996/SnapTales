@@ -4,7 +4,6 @@ namespace SnapTalesAPI.Interfaces
 {
     public interface IUserService
     {
-        Task<AuthResponse> FindOrCreateAsync(FindOrCreateRequest request);
         Task<AuthResponse> FindOrCreateByGoogleAsync(string googleSub, string? email, string? name, string? avatarUrl);
         Task<UserResponse?> GetByIdAsync(Guid id);
         Task<UserResponse?> UpdateAsync(Guid id, UpdateUserRequest request);

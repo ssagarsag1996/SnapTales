@@ -16,21 +16,6 @@ namespace SnapTalesAPI.Controllers
             _users = users;
         }
 
-        // POST /api/users/find-or-create — public, issues JWT
-        [HttpPost("find-or-create")]
-        public async Task<IActionResult> FindOrCreate([FromBody] FindOrCreateRequest request)
-        {
-            try
-            {
-                var auth = await _users.FindOrCreateAsync(request);
-                return Ok(auth);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { error = ex.Message });
-            }
-        }
-
         [Authorize]
         [HttpGet("{id:guid}")]
         public async Task<IActionResult> GetById(Guid id)

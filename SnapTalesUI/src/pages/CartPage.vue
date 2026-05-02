@@ -182,11 +182,12 @@ async function proceedToPayment() {
   if (store.currentUser?.phone === shippingForm.phone) { store.checkoutStep = 2; return }
   checkoutLoading.value = true
   try {
-    const { user, token } = await userService.findOrCreate({
+    const userId = store.currentUser!.id
+    const updated = await userService.update(userId, {
       name:  shippingForm.fullName || undefined,
-      phone: shippingForm.phone
+      phone: shippingForm.phone   || undefined,
     })
-    store.setUser(user, token)
+    store.setUser({ ...store.currentUser!, ...updated })
     store.checkoutStep = 2
   } catch {
     store.showToast('Something went wrong. Please try again.')

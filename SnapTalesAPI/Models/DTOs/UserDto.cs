@@ -3,16 +3,10 @@ namespace SnapTalesAPI.Models.DTOs
     /// <summary>Request body for POST /api/auth/google</summary>
     public record GoogleAuthRequest(string IdToken);
 
-    public record FindOrCreateRequest(
-        string? Name,
-        string? Email,
-        string? Phone,
-        string? FirebaseUid
-    );
-
     public record UpdateUserRequest(
         string? Name,
-        string? AvatarUrl
+        string? AvatarUrl,
+        string? Phone
     );
 
     public record AddressRequest(
@@ -32,7 +26,6 @@ namespace SnapTalesAPI.Models.DTOs
         string? Phone,
         int Role,
         string? AvatarUrl,
-        string? FirebaseUid,
         List<AddressResponse> Addresses,
         DateTime CreatedAt,
         DateTime UpdatedAt
