@@ -2,11 +2,17 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY .. .
+# Copy everything from repo root
+COPY . .
+
+# Move to API project
 WORKDIR /src/SnapTalesAPI
 
-RUN dotnet restore
-RUN dotnet publish -c Release -o /app
+# Restore using csproj explicitly
+RUN dotnet restore SnapTalesAPI.csproj
+
+# Publish
+RUN dotnet publish SnapTalesAPI.csproj -c Release -o /app
 
 # ----------- RUNTIME STAGE -----------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
