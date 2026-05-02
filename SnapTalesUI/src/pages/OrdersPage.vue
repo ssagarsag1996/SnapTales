@@ -2,8 +2,16 @@
   <main class="page active"><div class="page-pad">
     <h2 style="padding:16px 0 4px;font-family:var(--font-display);font-size:1.4rem;font-weight:700">My Orders</h2>
 
+    <!-- Auth gate -->
+    <div v-if="!store.currentUser" class="auth-gate">
+      <span class="material-icons-round auth-gate-icon">receipt_long</span>
+      <h3 class="auth-gate-title">Sign in to view orders</h3>
+      <p class="auth-gate-sub">Your order history will appear here once you sign in</p>
+      <button class="btn-gold" @click="store.openSignIn()">Sign In</button>
+    </div>
+
     <!-- Empty State -->
-    <div v-if="orders.length === 0" class="orders-empty">
+    <div v-else-if="orders.length === 0" class="orders-empty">
       <span class="material-icons-round">receipt_long</span>
       <h3>No orders yet</h3>
       <p>Your order history will appear here</p>
@@ -11,7 +19,7 @@
     </div>
 
     <!-- Orders List -->
-    <div v-else>
+    <div v-else-if="orders.length > 0">
       <div
         v-for="(o, i) in orders"
         :key="o.id"

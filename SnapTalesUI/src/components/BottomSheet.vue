@@ -1,18 +1,46 @@
 <template>
   <div v-if="store.sheetProduct" class="bsheet-content">
-    <!-- Close button — absolute top-right -->
+    <!-- Close button -->
     <button class="bsheet-close" @click="store.closeSheet()">
       <span class="material-icons-round">close</span>
     </button>
 
-    <!-- FIXED: Frame image — never scrolls -->
+    <!-- Product image (with carousel for multiple images) -->
     <div class="bsheet-img">
-      <div :class="['frame-lg', 'fr-' + store.sheetProduct.style]">
-        <div class="frame-box"><div class="inner-lg"></div></div>
+      <img
+        :src="mainImageSrc"
+        :alt="store.sheetProduct.name"
+        class="bsheet-photo"
+      />
+      <button
+        v-if="hasMultipleImages"
+        class="bsheet-img-nav bsheet-img-nav--prev"
+        @click="prevImage"
+        title="Previous image"
+      >
+        <span class="material-icons-round">chevron_left</span>
+      </button>
+      <button
+        v-if="hasMultipleImages"
+        class="bsheet-img-nav bsheet-img-nav--next"
+        @click="nextImage"
+        title="Next image"
+      >
+        <span class="material-icons-round">chevron_right</span>
+      </button>
+      <div v-if="hasMultipleImages" class="bsheet-img-dots">
+        <span
+          v-for="(_, i) in store.sheetProduct.images"
+          :key="i"
+          class="bsheet-img-dot"
+          :class="{ active: i === activeImageIdx }"
+          @click="activeImageIdx = i"
+        ></span>
       </div>
     </div>
 
-    <!-- FIXED: Name, Rating, Price — always visible -->
+
+    <!-- Name, Rating, Price -->
     <div class="bsheet-meta">
       <div class="bsheet-name">{{ store.sheetProduct.name }}</div>
 
@@ -22,40 +50,62 @@
           :key="s"
           class="material-icons-round"
         >{{ s <= Math.floor(store.sheetProduct.rating) ? 'star' : (s - store.sheetProduct.rating < 1 ? 'star_half' : 'star_border') }}</span>
-        <span>{{ store.sheetProduct.rating }} ({{ store.sheetProduct.reviews }} reviews)</span>
+        <span>{{ store.sheetProduct.rating }} ({{ store.sheetProduct.reviewCount }} reviews)</span>
       </div>
 
       <div class="bsheet-price">
         ${{ store.sheetProduct.price.toFixed(2) }}
-        <span v-if="store.sheetProduct.orig" class="old">${{ store.sheetProduct.orig.toFixed(2) }}</span>
+        <span v-if="store.sheetProduct.originalPrice" class="old">${{ store.sheetProduct.originalPrice.toFixed(2) }}</span>
       </div>
     </div>
 
-    <!-- SCROLLABLE: Description only — this is the only part that scrolls -->
+    <!-- Description -->
     <div class="bsheet-desc-wrap">
       <div class="bsheet-desc" :class="{ expanded: descExpanded }">
-        {{ store.sheetProduct.desc }}
+        {{ store.sheetProduct.description }}
       </div>
       <button v-if="isDescLong" class="read-more-btn" @click="descExpanded = !descExpanded">
         {{ descExpanded ? 'Read Less' : 'Read More' }}
       </button>
     </div>
 
-    <!-- FIXED: Size selector — always visible -->
+    <!-- Size selector -->
     <div class="bsheet-sizes">
       <div class="size-label">Select Size</div>
-      <div class="sizes">
-        <div
-          v-for="(sz, i) in store.sheetProduct.sizes"
-          :key="sz"
-          class="size-chip"
-          :class="{ active: selectedSizeIdx === i }"
-          @click="selectedSizeIdx = i"
-        >{{ sz }}</div>
+      <div class="sizes-wrap" :class="{ 'has-overflow': sizesOverflow }">
+        <button
+          v-if="sizesOverflow"
+          class="sizes-nav"
+          :disabled="atSizeStart"
+          @click="scrollSizes(-1)"
+          title="Scroll left"
+        >
+          <span class="material-icons-round">chevron_left</span>
+        </button>
+        <div class="sizes-viewport">
+          <div ref="sizesEl" class="sizes" @scroll="onSizesScroll">
+            <div
+              v-for="(sz, i) in store.sheetProduct.sizes"
+              :key="sz.id"
+              class="size-chip"
+              :class="{ active: selectedSizeIdx === i }"
+              @click="selectedSizeIdx = i"
+            >{{ sz.label }}</div>
+          </div>
+        </div>
+        <button
+          v-if="sizesOverflow"
+          class="sizes-nav"
+          :disabled="atSizeEnd"
+          @click="scrollSizes(1)"
+          title="Scroll right"
+        >
+          <span class="material-icons-round">chevron_right</span>
+        </button>
       </div>
     </div>
 
-    <!-- FIXED: Action buttons — always visible, pinned at bottom -->
+    <!-- Action buttons -->
     <div class="bsheet-acts">
       <button
         class="btn-wish"
@@ -76,32 +126,172 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { getProductImage } from '@/services/productService'
 
 const store = useAppStore()
-const selectedSizeIdx = ref(1)
-const descExpanded = ref(false)
+const selectedSizeIdx = ref(0)
+const descExpanded    = ref(false)
+const activeImageIdx  = ref(0)
 
-// Reset state when product changes
+// ── Size carousel state ──────────────────────────────────────────────────
+const sizesEl       = ref<HTMLElement | null>(null)
+const sizesOverflow = ref(false)
+const atSizeStart   = ref(true)
+const atSizeEnd     = ref(false)
+
+const measureSizes = () => {
+  const el = sizesEl.value
+  if (!el) {
+    sizesOverflow.value = false
+    return
+  }
+  const overflow = el.scrollWidth - el.clientWidth > 1
+  sizesOverflow.value = overflow
+  atSizeStart.value   = el.scrollLeft <= 1
+  atSizeEnd.value     = !overflow || el.scrollLeft + el.clientWidth >= el.scrollWidth - 1
+}
+
+const onSizesScroll = () => measureSizes()
+
+const scrollSizes = (dir: 1 | -1) => {
+  const el = sizesEl.value
+  if (!el) return
+  const delta = Math.max(120, Math.round(el.clientWidth * 0.7)) * dir
+  el.scrollBy({ left: delta, behavior: 'smooth' })
+}
+
 watch(() => store.sheetProduct, () => {
-  selectedSizeIdx.value = 1
-  descExpanded.value = false
+  selectedSizeIdx.value = 0
+  descExpanded.value    = false
+  activeImageIdx.value  = 0
+  // Reset size scroll position and recompute overflow after the new chips render
+  nextTick(() => {
+    sizesEl.value?.scrollTo({ left: 0, behavior: 'auto' })
+    measureSizes()
+  })
 })
 
-// Show Read More only if description is long enough
-const isDescLong = computed(() => {
-  return (store.sheetProduct?.desc?.length || 0) > 100
+onMounted(() => {
+  measureSizes()
+  window.addEventListener('resize', measureSizes)
 })
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measureSizes)
+})
+
+const hasMultipleImages = computed(() =>
+  (store.sheetProduct?.images?.length || 0) > 1
+)
+
+const mainImageSrc = computed(() => {
+  const imgs = store.sheetProduct?.images
+  if (!imgs?.length) return getProductImage([])
+  const idx = Math.min(activeImageIdx.value, imgs.length - 1)
+  return getProductImage([imgs[idx]])
+})
+
+const prevImage = () => {
+  const total = store.sheetProduct?.images?.length || 0
+  if (total < 2) return
+  activeImageIdx.value = (activeImageIdx.value - 1 + total) % total
+}
+
+const nextImage = () => {
+  const total = store.sheetProduct?.images?.length || 0
+  if (total < 2) return
+  activeImageIdx.value = (activeImageIdx.value + 1) % total
+}
+
+const isDescLong = computed(() =>
+  (store.sheetProduct?.description?.length || 0) > 100
+)
 
 const addToCart = () => {
   if (!store.sheetProduct) return
-  const size = store.sheetProduct.sizes[selectedSizeIdx.value] || store.sheetProduct.sizes[0]
+  const size = store.sheetProduct.sizes[selectedSizeIdx.value]?.label
+    ?? store.sheetProduct.sizes[0]?.label
+    ?? ''
   store.addCart(store.sheetProduct.id, size)
 }
 
 const tryWithPhoto = () => {
+  if (store.sheetProduct) store.setPreviewProduct(store.sheetProduct)
   store.closeSheet()
   store.nav('preview')
 }
 </script>
+
+<style scoped>
+.bsheet-img {
+  position: relative;
+  background:
+    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+}
+.bsheet-photo {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  padding: 14px;
+  box-sizing: border-box;
+  display: block;
+}
+.bsheet-img-nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(0,0,0,.55); color: #fff; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.bsheet-img-nav:hover { background: rgba(0,0,0,.78); }
+.bsheet-img-nav--prev { left: 10px; }
+.bsheet-img-nav--next { right: 10px; }
+.bsheet-img-dots {
+  position: absolute; bottom: 10px; left: 0; right: 0;
+  display: flex; justify-content: center; gap: 6px;
+}
+.bsheet-img-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(0,0,0,.25); cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+.bsheet-img-dot.active { background: var(--accent); transform: scale(1.25); }
+
+/* ── Size carousel ─────────────────────────────────────────────── */
+.sizes-wrap {
+  display: flex;
+  align-items: flex-start; /* top-align so buttons line up with chip top, not chip+scrollbar center */
+  gap: 8px;
+}
+.sizes-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+.sizes-nav {
+  flex: 0 0 auto;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: transform var(--t-fast) var(--ease), background var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease);
+}
+.sizes-nav:hover:not(:disabled) {
+  transform: scale(1.06);
+  background: var(--accent-hover, var(--accent));
+}
+.sizes-nav:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.sizes-nav:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.sizes-nav .material-icons-round { font-size: 22px; line-height: 1; }
+</style>

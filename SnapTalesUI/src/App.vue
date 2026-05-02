@@ -25,6 +25,15 @@
         <button class="icon-btn" @click="store.cycleTheme()" title="Change Theme">
           <span class="material-icons-round">palette</span>
         </button>
+        <button
+          class="icon-btn"
+          :class="{ 'icon-btn--authed': store.currentUser }"
+          :title="store.currentUser ? 'My Profile' : 'Sign In'"
+          @click="store.currentUser ? store.nav('profile') : store.openSignIn()"
+        >
+          <span v-if="store.currentUser" class="hdr-avatar">{{ store.currentUser.name?.charAt(0).toUpperCase() ?? '?' }}</span>
+          <span v-else class="material-icons-round">person_outline</span>
+        </button>
       </div>
     </header>
 
@@ -73,9 +82,35 @@
 
       <div class="sidebar-divider"></div>
 
-      <div class="sidebar-item" :class="{ active: store.currentPage === 'profile' }" @click="store.nav('profile')">
-        <span class="material-icons-round">person</span>
-        <span>Profile</span>
+      <!-- Admin section -->
+      <template v-if="store.isAdmin">
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label">Admin</div>
+        <div class="sidebar-item" :class="{ active: store.currentPage === 'admin-products' }" @click="store.nav('admin-products')">
+          <span class="material-icons-round">inventory_2</span>
+          <span>Products</span>
+        </div>
+        <div class="sidebar-item" :class="{ active: store.currentPage === 'admin-categories' }" @click="store.nav('admin-categories')">
+          <span class="material-icons-round">category</span>
+          <span>Categories</span>
+        </div>
+        <div class="sidebar-item" :class="{ active: store.currentPage === 'admin-sizes' }" @click="store.nav('admin-sizes')">
+          <span class="material-icons-round">straighten</span>
+          <span>Sizes</span>
+        </div>
+      </template>
+
+      <div class="sidebar-divider"></div>
+      <div v-if="store.currentUser" class="sidebar-item" :class="{ active: store.currentPage === 'profile' }" @click="store.nav('profile')">
+        <span class="sb-avatar">{{ store.currentUser.name?.charAt(0).toUpperCase() ?? '?' }}</span>
+        <div class="sb-user-info">
+          <span class="sb-user-name">{{ store.currentUser.name ?? 'My Account' }}</span>
+          <span class="sb-user-sub">{{ store.currentUser.email ?? store.currentUser.phone }}</span>
+        </div>
+      </div>
+      <div v-else class="sidebar-item" @click="store.openSignIn()">
+        <span class="material-icons-round">person_outline</span>
+        <span>Sign In</span>
       </div>
     </nav>
 
@@ -88,6 +123,9 @@
     <OrdersPage v-if="store.currentPage === 'orders'" />
     <NotificationsPage v-if="store.currentPage === 'notifications'" />
     <ProfilePage v-if="store.currentPage === 'profile'" />
+    <AdminProductsPage    v-if="store.currentPage === 'admin-products'" />
+    <AdminCategoriesPage  v-if="store.currentPage === 'admin-categories'" />
+    <AdminSizesPage       v-if="store.currentPage === 'admin-sizes'" />
 
     <!-- Tab bar (mobile only) -->
     <nav class="tab-bar">
@@ -133,15 +171,25 @@
     </div>
 
     <!-- Toast notification -->
-    <div class="toast" :class="{ show: store.toastVisible }">
-      <span class="material-icons-round">check_circle</span>
-      <span>{{ store.toastMsg }}</span>
-    </div>
+    <Teleport to="body">
+      <div class="toast" :class="{ show: store.toastVisible }">
+        <span class="material-icons-round">check_circle</span>
+        <span>{{ store.toastMsg }}</span>
+      </div>
+    </Teleport>
+
+    <!-- Sign In Modal -->
+    <SignInModal />
+
+    <!-- Confirm Dialog -->
+    <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useAppStore } from '@/stores/app'
+import { authService } from '@/services/authService'
+import { userService, onUnauthorized } from '@/services/userService'
 
 // Import page components
 import ShopPage from '@/pages/ShopPage.vue'
@@ -152,7 +200,12 @@ import CartPage from '@/pages/CartPage.vue'
 import OrdersPage from '@/pages/OrdersPage.vue'
 import NotificationsPage from '@/pages/NotificationsPage.vue'
 import ProfilePage from '@/pages/ProfilePage.vue'
+import AdminProductsPage from '@/pages/AdminProductsPage.vue'
+import AdminCategoriesPage from '@/pages/AdminCategoriesPage.vue'
+import AdminSizesPage from '@/pages/AdminSizesPage.vue'
 import BottomSheet from '@/components/BottomSheet.vue'
+import SignInModal from '@/components/SignInModal.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const store = useAppStore()
 const isScrolled = ref(false)
@@ -161,8 +214,26 @@ const handleScroll = () => {
   isScrolled.value = window.scrollY > 10
 }
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('scroll', handleScroll)
+  onUnauthorized(() => store.handleUnauthorized())
+  store.loadCatalogue()
+  // Handle Google redirect sign-in result (fires after signInWithRedirect returns)
+  try {
+    const creds = await authService.getGoogleRedirectResult()
+    if (creds && (creds.uid || creds.email || creds.phone)) {
+      const clean: { name?: string; email?: string; phone?: string; firebaseUid?: string } = {}
+      if (creds.uid)   clean.firebaseUid = creds.uid
+      if (creds.name)  clean.name        = creds.name
+      if (creds.email) clean.email       = creds.email
+      if (creds.phone) clean.phone       = creds.phone
+      const { user, token } = await userService.findOrCreate(clean)
+      store.setUser(user, token)
+      store.showToast(`Welcome${user.name ? ', ' + user.name : ''}!`)
+    }
+  } catch {
+    // No redirect result or error — silently ignore
+  }
 })
 
 onUnmounted(() => {

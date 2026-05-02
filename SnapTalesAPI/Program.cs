@@ -34,6 +34,10 @@ builder.Services.AddRazorpay(options =>
     options.WebhookSecret = builder.Configuration["Razorpay:WebhookSecret"] ?? string.Empty;
 });
 
+// ── Services ──────────────────────────────────────────────────────────────────
+builder.Services.AddSnapTalesServices();
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
 // ── API ───────────────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -54,7 +58,16 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("SnapTalesUI");
-app.UseHttpsRedirection();
+app.UseStaticFiles();
+
+// Generate sample frame overlay PNGs (skips if files already exist)
+var overlayService = app.Services.GetRequiredService<SnapTalesAPI.Services.SampleOverlayService>();
+await overlayService.GenerateSamplesAsync(app.Environment.WebRootPath);
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 

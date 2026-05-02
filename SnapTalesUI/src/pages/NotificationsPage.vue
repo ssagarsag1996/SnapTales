@@ -1,7 +1,15 @@
 <template>
   <main class="page active"><div class="page-pad">
     <h2 style="padding:16px 0 4px;font-family:var(--font-display);font-size:1.4rem;font-weight:700">Notifications</h2>
-    <div class="notif-list">
+    <!-- Auth gate -->
+    <div v-if="!store.currentUser" class="auth-gate">
+      <span class="material-icons-round auth-gate-icon">notifications_none</span>
+      <h3 class="auth-gate-title">Sign in for notifications</h3>
+      <p class="auth-gate-sub">Order updates and offers will appear here</p>
+      <button class="btn-gold" @click="store.openSignIn()">Sign In</button>
+    </div>
+
+    <div v-else class="notif-list">
       <div
         v-for="(n, i) in notifications"
         :key="i"
@@ -21,7 +29,10 @@
 </template>
 
 <script setup lang="ts">
+import { useAppStore } from '@/stores/app'
 import { NOTIFS } from '@/data/products'
+
+const store = useAppStore()
 
 const notifications = NOTIFS
 
