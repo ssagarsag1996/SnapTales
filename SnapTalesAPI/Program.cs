@@ -13,7 +13,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("SnapTalesUI", policy =>
         policy
-            .WithOrigins("http://localhost:8100")
+            .WithOrigins("http://localhost:8100", "https://snaptalesui.onrender.com")
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
