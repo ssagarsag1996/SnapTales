@@ -9,11 +9,17 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 // ── CORS — allow Vue UI ───────────────────────────────────────────────────────
+// Origins are read from config so staging URLs can be added via appsettings or
+// a Render env var (Cors__AllowedOrigins__0 etc.) without changing code.
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:8100" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("SnapTalesUI", policy =>
         policy
-            .WithOrigins("http://localhost:8100", "https://snaptalesui.onrender.com")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
 });

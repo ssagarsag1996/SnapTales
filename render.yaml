@@ -1,0 +1,33 @@
+services:
+
+  # ── SnapTales API (ASP.NET Core) ─────────────────────────────────────────────
+  - type: web
+    name: snaptalesapi
+    env: dotnet
+    rootDir: SnapTalesAPI
+    buildCommand: dotnet publish -c Release -o out
+    startCommand: dotnet out/SnapTalesAPI.dll
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:10000
+      - key: ConnectionStrings__DefaultConnection
+        sync: false   # Set manually in Render dashboard (Postgres internal URL)
+      - key: Jwt__Key
+        sync: false   # Set manually in Render dashboard (32+ char secret)
+
+  # ── SnapTales UI (Vite static site) ──────────────────────────────────────────
+  - type: web
+    name: snaptalesui
+    env: static
+    rootDir: SnapTalesUI
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://snaptalesapi.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

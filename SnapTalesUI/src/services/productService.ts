@@ -1,7 +1,8 @@
 import { authHeaders, triggerUnauthorized } from './userService'
 
-const API_BASE = 'http://localhost:5184/api'
-const IMG_BASE = 'http://localhost:5184'
+const _BASE    = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5184'
+const API_BASE = `${_BASE}/api`
+const IMG_BASE = _BASE
 
 export interface Category {
   id: string

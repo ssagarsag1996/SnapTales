@@ -1,0 +1,16 @@
+# Build output & dependencies
+node_modules/
+dist/
+
+# TypeScript build info
+*.tsbuildinfo
+vite.config.d.ts
+
+# Local environment overrides — never commit (may contain secrets)
+.env.local
+.env.*.local
+
+# Mode-specific env files are safe to commit (non-secret API URLs)
+# These negations override any parent .gitignore that might match .env.*
+!.env.development
+!.env.production
