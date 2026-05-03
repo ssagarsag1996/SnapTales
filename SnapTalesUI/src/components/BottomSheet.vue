@@ -5,13 +5,45 @@
       <span class="material-icons-round">close</span>
     </button>
 
-    <!-- Product image (with carousel for multiple images) -->
-    <div class="bsheet-img">
-      <img
-        :src="mainImageSrc"
-        :alt="store.sheetProduct.name"
-        class="bsheet-photo"
-      />
+    <!-- Image carousel wrapper — handles the edge-to-edge margin & nav button positioning.
+         Intentionally has NO overflow:hidden so the buttons are never clipped. -->
+    <div class="bsheet-img-wrap">
+      <!-- Inner image zone clips the sliding track -->
+      <div class="bsheet-img">
+        <div
+          class="bsheet-img-track"
+          :class="{ 'no-transition': slideNoTransition }"
+          :style="{ transform: `translateX(-${activeImageIdx * 100}%)` }"
+        >
+          <template v-if="store.sheetProduct.images?.length">
+            <img
+              v-for="(img, i) in store.sheetProduct.images"
+              :key="i"
+              :src="getProductImage([img])"
+              :alt="store.sheetProduct.name"
+              class="bsheet-photo"
+            />
+          </template>
+          <img
+            v-else
+            :src="getProductImage([])"
+            :alt="store.sheetProduct.name"
+            class="bsheet-photo"
+          />
+        </div>
+
+        <div v-if="hasMultipleImages" class="bsheet-img-dots">
+          <span
+            v-for="(_, i) in store.sheetProduct.images"
+            :key="i"
+            class="bsheet-img-dot"
+            :class="{ active: i === activeImageIdx }"
+            @click="goToImage(i)"
+          ></span>
+        </div>
+      </div>
+
+      <!-- Nav buttons are OUTSIDE .bsheet-img so they are never clipped -->
       <button
         v-if="hasMultipleImages"
         class="bsheet-img-nav bsheet-img-nav--prev"
@@ -28,15 +60,6 @@
       >
         <span class="material-icons-round">chevron_right</span>
       </button>
-      <div v-if="hasMultipleImages" class="bsheet-img-dots">
-        <span
-          v-for="(_, i) in store.sheetProduct.images"
-          :key="i"
-          class="bsheet-img-dot"
-          :class="{ active: i === activeImageIdx }"
-          @click="activeImageIdx = i"
-        ></span>
-      </div>
     </div>
 
 
@@ -131,9 +154,10 @@ import { useAppStore } from '@/stores/app'
 import { getProductImage } from '@/services/productService'
 
 const store = useAppStore()
-const selectedSizeIdx = ref(0)
-const descExpanded    = ref(false)
-const activeImageIdx  = ref(0)
+const selectedSizeIdx  = ref(0)
+const descExpanded     = ref(false)
+const activeImageIdx   = ref(0)
+const slideNoTransition = ref(false)
 
 // ── Size carousel state ──────────────────────────────────────────────────
 const sizesEl       = ref<HTMLElement | null>(null)
@@ -165,9 +189,11 @@ const scrollSizes = (dir: 1 | -1) => {
 watch(() => store.sheetProduct, () => {
   selectedSizeIdx.value = 0
   descExpanded.value    = false
-  activeImageIdx.value  = 0
-  // Reset size scroll position and recompute overflow after the new chips render
+  // Jump to first image instantly (no slide animation on product change)
+  slideNoTransition.value = true
+  activeImageIdx.value    = 0
   nextTick(() => {
+    slideNoTransition.value = false
     sizesEl.value?.scrollTo({ left: 0, behavior: 'auto' })
     measureSizes()
   })
@@ -186,13 +212,6 @@ const hasMultipleImages = computed(() =>
   (store.sheetProduct?.images?.length || 0) > 1
 )
 
-const mainImageSrc = computed(() => {
-  const imgs = store.sheetProduct?.images
-  if (!imgs?.length) return getProductImage([])
-  const idx = Math.min(activeImageIdx.value, imgs.length - 1)
-  return getProductImage([imgs[idx]])
-})
-
 const prevImage = () => {
   const total = store.sheetProduct?.images?.length || 0
   if (total < 2) return
@@ -203,6 +222,10 @@ const nextImage = () => {
   const total = store.sheetProduct?.images?.length || 0
   if (total < 2) return
   activeImageIdx.value = (activeImageIdx.value + 1) % total
+}
+
+const goToImage = (i: number) => {
+  activeImageIdx.value = i
 }
 
 const isDescLong = computed(() =>
@@ -225,28 +248,58 @@ const tryWithPhoto = () => {
 </script>
 
 <style scoped>
+/* Wrapper — normal flow width (respects .bsheet-body padding), positioning context for buttons.
+   NO overflow:hidden here — that would clip the buttons. Visual rounding is on .bsheet-img. */
+.bsheet-img-wrap {
+  position: relative;
+  margin: 0 0 16px;
+}
+
+/* Inner image area — clips the sliding track and provides the card visual */
 .bsheet-img {
   position: relative;
-  background:
-    linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+  overflow: hidden;
+  margin: 0;            /* override any global negative-margin on .bsheet-img */
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
 }
+
+/* Sliding track — all images sit side-by-side; translateX drives the carousel */
+.bsheet-img-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+}
+.bsheet-img-track.no-transition { transition: none; }
+
 .bsheet-photo {
+  flex: 0 0 100%;
   width: 100%; height: 100%;
   object-fit: contain;
   padding: 14px;
   box-sizing: border-box;
   display: block;
 }
+
+/* Nav buttons — live in .bsheet-img-wrap (no overflow clip), always fully visible */
 .bsheet-img-nav {
-  position: absolute; top: 50%; transform: translateY(-50%);
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
   width: 36px; height: 36px; border-radius: 50%;
-  background: rgba(0,0,0,.55); color: #fff; border: none; cursor: pointer;
+  background: var(--accent); color: #fff; border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  transition: background .15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  transition: background .15s, transform .15s;
+  z-index: 2;
 }
-.bsheet-img-nav:hover { background: rgba(0,0,0,.78); }
-.bsheet-img-nav--prev { left: 10px; }
-.bsheet-img-nav--next { right: 10px; }
+.bsheet-img-nav:hover {
+  background: var(--accent-hover, var(--accent));
+  transform: translateY(-50%) scale(1.08);
+}
+.bsheet-img-nav:active { transform: translateY(-50%) scale(0.92); }
+.bsheet-img-nav--prev { left: 12px; }
+.bsheet-img-nav--next { right: 12px; }
 .bsheet-img-dots {
   position: absolute; bottom: 10px; left: 0; right: 0;
   display: flex; justify-content: center; gap: 6px;
