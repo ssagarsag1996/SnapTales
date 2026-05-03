@@ -64,11 +64,16 @@ export function initGoogle(): void {
 
 /**
  * Render the official Google Sign-In button into `element`.
- * The button fills the container width (max 400 px per GIS constraints).
+ * Pins `width` to the container's current clientWidth so the button never
+ * reflows when GIS switches from the generic to the personalised state
+ * ("Continue as [Name]") — that switch is what causes the visible jerk.
  */
 export function renderGoogleButton(element: HTMLElement): void {
   const g = gis()
   if (!g) return
+  // Read the rendered width now (after nextTick) so the button is always
+  // exactly as wide as its container — no resize when personalisation loads.
+  const width = element.clientWidth || 400
   g.renderButton(element, {
     type: 'standard',
     theme: 'outline',
@@ -76,6 +81,7 @@ export function renderGoogleButton(element: HTMLElement): void {
     text: 'continue_with',
     shape: 'pill',
     logo_alignment: 'center',
+    width,
   })
 }
 

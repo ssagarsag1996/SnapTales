@@ -112,8 +112,11 @@ watch(() => store.signInOpen, (isOpen) => {
   border-radius: 28px 28px 0 0;
   width: 100%;
   max-width: 440px;
+  max-height: calc(100dvh - 60px); /* never taller than viewport - 60px for safe backdrop tap area */
+  overflow-y: auto;
   position: relative;
-  padding-bottom: 28px;
+  /* Keep 28 px of breathing room AND clear the system gesture bar on all devices */
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 @media (min-width: 520px) {
   .modal-card { border-radius: 28px; }
@@ -159,7 +162,8 @@ watch(() => store.signInOpen, (isOpen) => {
 .gsi-wrap {
   display: flex;
   justify-content: center;
-  min-height: 44px;
+  align-items: center;
+  height: 44px; /* 4 px buffer around the 40 px GIS 'large' iframe — border never clips */
 }
 
 /* ── Loading state ─────────────────────────────── */
